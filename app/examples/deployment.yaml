@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gcs-fuse
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gcs-fuse-csi-example
+  template:
+    metadata:
+      annotations:
+        gke-gcsfuse/ephemeral-storage-limit: 0Gi
+        gke-gcsfuse/ephemeral-storage-request: 0Gi
+        gke-gcsfuse/volumes: "true"
+      creationTimestamp: null
+      labels:
+        app: gcs-fuse-csi-example
+    spec:
+      containers:
+        - image: busybox
+          name: busybox
+          command: [ "sleep" ]
+          args: [ "infinity" ]
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "250m"
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+          volumeMounts:
+            - name: gcs-fuse-csi-static
+              mountPath: /data
+              readOnly: false
+      volumes:
+        - name: gcs-fuse-csi-static
+          persistentVolumeClaim:
+            claimName: gcs-fuse-csi-static-pvc
+
+      serviceAccount: gcfuse
+      serviceAccountName: gcfuse
+      terminationGracePeriodSeconds: 30
+

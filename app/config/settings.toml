@@ -1,0 +1,45 @@
+[k8s]
+config_mode = "local"  # Use "local" or "in-cluster"
+namespace = "default"
+
+
+[scaling]
+timeout = 600  # Timeout in seconds for operations
+interval = 10   # Interval in seconds to check status
+min_replicas = 3
+max_replicas = 10
+scale_up_timeout = 1800  # 30 minutes in seconds
+scale_down_timeout = 900  # 15 minutes in seconds
+node_provision_timeout = 300  # 5 minutes in seconds for node provisioning check
+scale_check_interval = 30  # Interval to check scaling progress
+
+[logging]
+log_level = "INFO"  # Possible values: DEBUG, INFO, WARNING, ERROR, CRITICAL
+
+[proxy]
+http_proxy = ""
+https_proxy = ""
+verify_ssl = true  # Set to false to disable SSL verification
+
+
+[driver]
+csi_driver_name = "gcsfuse.csi.storage.gke.io"
+driver_namespace = "kube-system"
+driver_pod_label = "app=gcp-filestore-csi-driver"
+
+[gcs_fuse]
+namespace = "default"
+deployment_name = "gcs-fuse"
+app_label = "gcs-fuse-csi-example"
+mount_path = "/data"
+csi_driver_name = "gcsfuse.csi.storage.gke.io"
+driver_namespace = "kube-system"
+replicas = 2
+retry_count = 5
+retry_interval = 5
+
+[test]
+test_content = "Hello GCS FUSE!"
+test_filename = "test_file_gcs_fuse.txt"
+multi_pod_test_filename = "multi_pod_test_file.txt"
+multi_pod_test_content = "Hello from GCS FUSE multi-pod test!"

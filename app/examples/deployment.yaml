@@ -38,7 +38,6 @@ spec:
         - name: gcs-fuse-csi-static
           persistentVolumeClaim:
             claimName: gcs-fuse-csi-static-pvc
-
       serviceAccount: gcfuse
       serviceAccountName: gcfuse
       terminationGracePeriodSeconds: 30

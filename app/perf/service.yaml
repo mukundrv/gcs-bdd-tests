@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: gcs-fuse-metrics
+  namespace: default
+  labels:
+    app: gcs-fuse-per
+    release: kube-prometheus-stack
+spec:
+  ports:
+  - port: 8181
+    name: app-metrics
+    targetPort: 7010
+  selector:
+    app: gcs-fuse-per

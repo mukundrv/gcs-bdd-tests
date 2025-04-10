@@ -39,6 +39,7 @@ retry_count = 5
 retry_interval = 5
 
 [test]
+sample_data_filename = "sampledata.txt"
 test_content = "Hello GCS FUSE!"
 test_filename = "test_file_gcs_fuse.txt"
 multi_pod_test_filename = "multi_pod_test_file.txt"

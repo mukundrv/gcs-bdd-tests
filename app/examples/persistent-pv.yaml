@@ -10,8 +10,10 @@ spec:
     storage: 5Gi
   storageClassName: ""
   mountOptions:
-    - only-dir=data
+    - implicit-dirs
+    - file-cache:enable-parallel-downloads:true
+    - file-cache:max-size-mb:-1
   csi:
     driver: gcsfuse.csi.storage.gke.io
-    volumeHandle: <BucketName>
+    volumeHandle: gke-bucket-mount
 

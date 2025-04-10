@@ -1,0 +1,99 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gcs-fuse-perf-cm
+  namespace: default
+data:
+  read_file.py: |
+    from prometheus_client import start_http_server, Summary, Counter, Gauge
+    import time
+    import logging
+    import random
+    import os
+
+    # Configure logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s'
+    )
+    logger = logging.getLogger('gcsfuse-perf')
+
+    # Environment variables for parameterization
+    DATA_DIR = os.getenv('DATA_DIR', '/data')
+    ERROR_LOG_DIR = os.getenv('ERROR_LOG_DIR', '/data/gcsfuse')
+    PROMETHEUS_PORT = int(os.getenv('PROMETHEUS_PORT', '7010'))
+    SLEEP_INTERVAL = float(os.getenv('SLEEP_INTERVAL', '0.1'))
+    FILE_PATTERN = os.getenv('FILE_PATTERN', 'sampledata*.txt').split(',')
+    
+    # Get the pod name from the environment variable
+    pod_name = os.getenv('POD_NAME', 'unknown_pod')
+
+    # Ensure error log directory exists
+    os.makedirs(ERROR_LOG_DIR, exist_ok=True)
+    
+    # Set up file handler for error logging
+    error_handler = logging.FileHandler(f'{ERROR_LOG_DIR}/error.log') 
+    error_handler.setLevel(logging.ERROR)
+
+    # Create a console handler for info logging
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+
+    # Create a formatter and set it for both handlers
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    error_handler.setFormatter(formatter)
+    console_handler.setFormatter(formatter)
+
+    # Add the handlers to the logger
+    logger.addHandler(error_handler)
+    logger.addHandler(console_handler)
+
+    # Define Prometheus metrics
+    READ_LATENCY = Summary('gcsfuse_read_latency_seconds', 'Latency of file read operations')
+    READ_BYTES = Counter('gcsfuse_read_bytes_total', 'Total bytes read from files')
+    READ_OPS = Counter('gcsfuse_read_operations_total', 'Total number of read operations')
+    READ_ERRORS = Counter('gcsfuse_read_errors_total', 'Total number of read errors')
+    THROUGHPUT = Gauge('gcsfuse_throughput_bytes_per_second', 'Throughput in bytes per second')
+
+    # Get list of available files matching the pattern
+    def get_available_files():
+        import glob
+        files = []
+        for pattern in FILE_PATTERN:
+            files.extend(glob.glob(f'{DATA_DIR}/{pattern}'))
+        return [os.path.basename(f) for f in files] if files else ["sampledata1.txt", "sampledata2.txt", "sampledata3.txt", "sampledata4.txt", "sampledata5.txt",
+                          "sampledata6.txt","sampledata7.txt","sampledata8.txt","sampledata9.txt","sampledata10.txt"]
+
+    def read_file():
+        try:
+            filename_list = get_available_files()
+            filename = random.choice(filename_list)
+            file_path = f'{DATA_DIR}/{filename}'
+          
+            start_time = time.time()  # Start time for latency measurement
+            with open(file_path, 'r') as file:
+                data = file.read()
+                bytes_read = len(data)
+                latency = time.time() - start_time  # Calculate latency
+                
+                # Update Prometheus metrics
+                READ_LATENCY.observe(latency)
+                READ_BYTES.inc(bytes_read)
+                READ_OPS.inc()
+                THROUGHPUT.set(bytes_read / latency if latency > 0 else 0)
+                
+                logger.info(f"{filename} read successfully: {bytes_read} bytes, Latency: {latency:.4f} seconds")
+                return 1  # Successful operation
+        except Exception as e:
+            logger.error(f"Error in {pod_name} reading file: {e}")
+            READ_ERRORS.inc()
+            return 0  # Failed operation
+
+    if __name__ == '__main__':
+        # Start the Prometheus metrics server
+        start_http_server(PROMETHEUS_PORT)
+        logger.info(f"Prometheus metrics server started on port {PROMETHEUS_PORT}.")
+        
+        while True:
+            read_file()  # Just read files and increment counters
+            time.sleep(SLEEP_INTERVAL)

@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gcs-fuse-per   # Name of the deployment
+  namespace: default       # Change this if your namespace is different
+spec:
+  replicas: 1              # Number of desired pods
+  selector:
+    matchLabels:
+      app: gcs-fuse-per 
+  template:
+    metadata:
+      annotations:
+        gke-gcsfuse/ephemeral-storage-limit: 0Gi
+        gke-gcsfuse/ephemeral-storage-request: 0Gi
+        gke-gcsfuse/volumes: "true"
+      labels:
+        app: gcs-fuse-per 
+    spec:
+      containers:
+        - name: gcs-fuse-per 
+          image: us-central1-docker.pkg.dev/lab-gke-se/flask/flask-app:latest  # Use a lightweight Python image
+          command: ["python", "/app/read_file.py"]  # Command to run the script
+          ports:
+            - containerPort: 7010
+              name: app-metrics
+          volumeMounts:
+            - name: custom-metric-cm
+              mountPath: /app  # Mount the ConfigMap
+            - name: gcs-fuse-csi-static
+              mountPath: /data
+              readOnly: false  # Mount the PVC to the desired path
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          resources:
+            requests:
+              cpu: "100m"      # Minimum CPU guaranteed
+              memory: "256Mi"  # Minimum memory guaranteed
+            limits:
+              cpu: "200m"      # Maximum CPU allowed
+              memory: "512Mi"  # Maximum memory allowed
+      volumes:
+        - name: custom-metric-cm
+          configMap:
+            name: gcs-fuse-perf-cm
+        - name: gcs-fuse-csi-static
+          persistentVolumeClaim:
+            claimName: gcs-fuse-csi-static-pvc
+      serviceAccount: gcfuse

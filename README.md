@@ -31,6 +31,12 @@ The test suite verifies:
 - Verifies file reading capabilities
 - Ensures data consistency across operations
 
+### 5. Performance Metrics Verification
+- Monitors IOPS (Input/Output Operations per Second)
+- Tracks throughput for read operations
+- Measures latency of file operations
+- Monitors error rates
+
 ## Prerequisites
 
 1. Access to a GKE cluster with GCS FUSE CSI Driver installed
@@ -182,4 +188,6 @@ For issues and support:
 
 **Note:** This test suite is designed to verify the proper installation and functionality 
 of the GCS FUSE CSI Driver in your GKE environment. Please ensure all prerequisites 
-are met before running the tests. 
+are met before running the tests.
+
+
